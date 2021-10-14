@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+    <script>
+        /*
+            개선점,            
+
+            canvasId는 drawDice시에 주는게 더 좋아보임
+
+            diceWidth, diceHeight같은 정보는 drawDice시에 주는게 더 좋음 
+
+            getDiceIndexRelativePositions 내부에서 재귀호출이 일어나는데 이를 줄여야함
+            줄이면서 동시에 메모리에 상주시켜서 불필요한 object생성을 막는게 더 효율적으로 보임
+            즉 이는 초기에 구조를 잘못 구상한 것
+
+            직접적으로 object의 key를 입력하는 방식은 오류가 생길 수도있음 추후에 sugaring된 문법을 이용할 것
+                -> 새로 만들기 귀찮아서 이렇게했는데 후회하고있음
+
+            getDiceIndexRelativePositions의 리턴값을 forEach로 순회하는거는 부자연스럽다고는 생각하지만
+            const변수의 접근이고, 내부에서 리턴값의 modify를하지않으므로 괜찮을거는 같음
+            이거는 내가 귀찮아서 그냥 이렇게 한것
+
+            이외에도 몇가지 개선점이 생각나긴하는데 배가고프니 이이상하진 않을것
+         */
+        const diceWidth = 100;
+        const diceHeight = 100;
+        const diceIndexRadius = 10;
+        const diceLineWidth = 3;
+        function drawDice(index, position) {
+            const canvas = document.getElementById('diceCanvas');
+
+            createDiceBody(canvas, position);
+            createDiceIndex(canvas, position, index);
+        }
+
+        function createDiceBody(canvas, position) {
+            const context = canvas.getContext('2d');
+            context.beginPath();
+            context.rect(position.x, position.y, diceHeight, diceHeight);
+            context.strokeStyle = 'black';
+            context.fillStyle = 'white';
+            context.lineWidth = diceLineWidth;
+            context.fill();
+            context.closePath();
+            context.stroke();
+        }
+
+        function createDiceIndex(canvas, position, index) {
+            const context = canvas.getContext('2d');
+            context.beginPath();
+            const indexPositions = getDiceIndexRelativePositions(index);
+            indexPositions.forEach((indexPosition) => {
+                context.arc(
+                    indexPosition.x * diceWidth + position.x,
+                    indexPosition.y * diceHeight + position.y,
+                    diceIndexRadius,
+                    0,
+                    Math.PI * 2
+                );
+                context.closePath();
+            });
+
+            context.fillStyle = 'black';
+            context.fill();
+        }
+
+        //구조를 바꾸고싶긴한데 귀찮다
+        function getDiceIndexRelativePositions(index) {
+            switch (index) {
+                case 1:
+                    return [{ x: 0.5, y: 0.5 }];
+                case 2:
+                    return [
+                        { x: 0.2, y: 0.2 },
+                        { x: 0.8, y: 0.8 },
+                    ];
+                case 3:
+                    return [
+                        ...getDiceIndexRelativePositions(1),
+                        ...getDiceIndexRelativePositions(2),
+                    ];
+                case 4:
+                    return [
+                        ...getDiceIndexRelativePositions(2),
+                        { x: 0.8, y: 0.2 },
+                        { x: 0.2, y: 0.8 },
+                    ];
+                case 5:
+                    return [
+                        ...getDiceIndexRelativePositions(4),
+                        ...getDiceIndexRelativePositions(1),
+                    ];
+                case 6:
+                    return [
+                        ...getDiceIndexRelativePositions(4),
+                        { x: 0.2, y: 0.5 },
+                        { x: 0.8, y: 0.5 },
+                    ];
+                default:
+                    console.log('not support dice index: ' + index);
+                    return [];
+            }
+        }
+    </script>
+</html>
+<body>
+    <canvas
+        id="diceCanvas"
+        width="1000"
+        height="1000"
+        style="background-color: aquamarine"
+    ></canvas>
+    <script>
+        const diceStartPosition = {
+            x: 10,
+            y: 10,
+        };
+        for (var i = 0; i < 6; i++) {
+            var isNextLine = i >= 3;
+            drawDice(i + 1, {
+                x: diceStartPosition.x + diceWidth * (isNextLine ? i - 3 : i),
+                y: diceStartPosition.y + diceHeight * (isNextLine ? 1 : 0),
+            });
+        }
+    </script>
+</body>
